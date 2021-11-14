@@ -135,13 +135,6 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
 
             require((thisTicketNumber >= 1000000) && (thisTicketNumber <= 1999999), "Outside range");
 
-            _numberTicketsPerLotteryId[_lotteryId][1 + (thisTicketNumber % 10)]++;
-            _numberTicketsPerLotteryId[_lotteryId][11 + (thisTicketNumber % 100)]++;
-            _numberTicketsPerLotteryId[_lotteryId][111 + (thisTicketNumber % 1000)]++;
-            _numberTicketsPerLotteryId[_lotteryId][1111 + (thisTicketNumber % 10000)]++;
-            _numberTicketsPerLotteryId[_lotteryId][11111 + (thisTicketNumber % 100000)]++;
-            _numberTicketsPerLotteryId[_lotteryId][111111 + (thisTicketNumber % 1000000)]++;
-
             _userTicketIdsPerLotteryId[msg.sender][_lotteryId].push(currentTicketId);
             _tickets[currentTicketId] = Ticket({number: thisTicketNumber, owner: msg.sender});
             currentTicketId++;
@@ -214,34 +207,45 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
         
         require(_lotteryId == randomGenerator.viewLatestLotteryId(), "Numbers not drawn");
 
-        uint32 finalNumber = randomGenerator.viewRandomResult();
+        uint32 finalNumber = randomGenerator.viewRandomResult(); // assume finalNumber = 1234567, the winning numbers are 2,3,4,5,6,7
         uint256 numberAddressesInPreviousBracket;
         uint256 amountToShareToWinners = (
             ((_lotteries[_lotteryId].amountCollectedInCake) * (10000 - _lotteries[_lotteryId].treasuryFee))
         ) / 10000;
 
         uint256 amountToWithdrawToTreasury;
-
+        uint32[6] memory transformedWinningNumber;
         for (uint32 i = 0; i < 6; i++) {
             uint32 j = 5 - i;
-            uint32 transformedWinningNumber = _bracketCalculator[j] + (finalNumber % (uint32(10)**(j + 1)));
-
-            _lotteries[_lotteryId].countWinnersPerBracket[j] =
-                _numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber] -
-                numberAddressesInPreviousBracket;
-            
+            transformedWinningNumber[i] = finalNumber % (uint32(10)**(j + 1));
+        }
+        for(uint k=_lotteries[_lotteryId].firstTicketId; k<currentTicketId; k++)
+        {
+            Ticket tmp = _tickets[k];
+            for (uint32 i = 0; i < 6; i++) {
+                uint32 j = 5 - i;
+                uint32 m = tmp.number % (uint32(10)**(j + 1));
+                if (m!=transformedWinningNumber[i]){
+                    break;
+                }
+            }
+            if (i>0){
+                // some prefix numbers match
+                _lotteries[_lotteryId].countWinnersPerBracket[i-1]++;
+            }
+        }
+        
+        for (uint32 i = 0; i < 6; i++) {
+            uint32 j = 5 - i;
             if (
-                (_numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber] - numberAddressesInPreviousBracket) !=
-                0
+                _lotteries[_lotteryId].countWinnersPerBracket != 0
             ) {
                 if (_lotteries[_lotteryId].rewardsBreakdown[j] != 0) {
                     _lotteries[_lotteryId].cakePerBracket[j] =
                         ((_lotteries[_lotteryId].rewardsBreakdown[j] * amountToShareToWinners) /
-                            (_numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber] -
-                                numberAddressesInPreviousBracket)) /
+                            (_lotteries[_lotteryId].countWinnersPerBracket)) /
                         10000;
 
-                    numberAddressesInPreviousBracket = _numberTicketsPerLotteryId[_lotteryId][transformedWinningNumber];
                 }
             } else {
                 _lotteries[_lotteryId].cakePerBracket[j] = 0;
