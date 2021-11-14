@@ -222,16 +222,17 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
         for(uint k=_lotteries[_lotteryId].firstTicketId; k<currentTicketId; k++)
         {
             Ticket tmp = _tickets[k];
-            for (uint32 i = 0; i < 6; i++) {
-                uint32 j = 5 - i;
+            uint32 tt;
+            for (tt = 0; tt < 6; tt++) {
+                uint32 j = 5 - tt;
                 uint32 m = tmp.number % (uint32(10)**(j + 1));
-                if (m!=transformedWinningNumber[i]){
+                if (m!=transformedWinningNumber[tt]){
                     break;
                 }
             }
-            if (i>0){
+            if (tt>0){
                 // some prefix numbers match
-                _lotteries[_lotteryId].countWinnersPerBracket[i-1]++;
+                _lotteries[_lotteryId].countWinnersPerBracket[tt-1]++;
             }
         }
         
