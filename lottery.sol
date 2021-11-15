@@ -215,17 +215,19 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
 
         uint256 amountToWithdrawToTreasury;
         uint32[6] memory transformedWinningNumber;
+        finalNumber = finalNumber % (uint32(10)**(6)); // finalNumber should be like 876543
         for (uint32 i = 0; i < 6; i++) {
             uint32 j = 5 - i;
-            transformedWinningNumber[i] = finalNumber % (uint32(10)**(j + 1));
+            transformedWinningNumber[i] = finalNumber / (uint32(10)**(j + 1)); //stores items like [8, 87, 876, 8765, 87654, 876543] 
         }
         for(uint k=_lotteries[_lotteryId].firstTicketId; k<currentTicketId; k++)
         {
             Ticket tmp = _tickets[k];
+            uint32 num = tmp.number % (uint32(10)**(6)); // num should be like 876999
             uint32 tt;
             for (tt = 0; tt < 6; tt++) {
                 uint32 j = 5 - tt;
-                uint32 m = tmp.number % (uint32(10)**(j + 1));
+                uint32 m = num / (uint32(10)**(j + 1)); //stores items like [8, 87, 876, 8769, 87699, 876999] 
                 if (m!=transformedWinningNumber[tt]){
                     break;
                 }
