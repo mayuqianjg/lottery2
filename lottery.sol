@@ -208,7 +208,7 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
         require(_lotteryId == randomGenerator.viewLatestLotteryId(), "Numbers not drawn");
 
         uint32 finalNumber = randomGenerator.viewRandomResult(); // assume finalNumber = 1234567, the winning numbers are 2,3,4,5,6,7
-        uint256 numberAddressesInPreviousBracket;
+        uint256 numberAddressesInPreviousBracket = 0;
         uint256 amountToShareToWinners = (
             ((_lotteries[_lotteryId].amountCollectedInCake) * (10000 - _lotteries[_lotteryId].treasuryFee))
         ) / 10000;
@@ -233,8 +233,9 @@ contract PancakeSwapLottery is ReentrancyGuard, IPancakeSwapLottery, Ownable {
                 }
             }
             if (tt>0){
-                // some prefix numbers match
+                // some prefix numbers match; this ticket is going to get rewards
                 _lotteries[_lotteryId].countWinnersPerBracket[tt-1]++;
+                numberAddressesInPreviousBracket++;
             }
         }
         
